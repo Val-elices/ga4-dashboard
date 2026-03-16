@@ -226,10 +226,6 @@ export default function GA4Dashboard() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#0d0d1a", color: "#e2e2f0", fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
-	<style>{`
-	  * { margin: 0; padding: 0; box-sizing: border-box; }
-	  html, body, #root { width: 100%; min-height: 100vh; overflow-x: hidden; }
-	`}</style>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
       {/* Header */}
@@ -237,10 +233,10 @@ export default function GA4Dashboard() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg, #6366f1, #818cf8)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700 }}>R</div>
-            <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>Revenue TOTAL cumulé</h1>
+            <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>Revenue Aggregator</h1>
           </div>
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", margin: 0 }}>
-            Multi-propriété GA4
+            Multi-property GA4 — Cumul des revenus
             {auth.authenticated && <span style={{ color: "#6ee7b7", marginLeft: 8 }}>● {auth.email}</span>}
           </p>
         </div>
@@ -251,15 +247,15 @@ export default function GA4Dashboard() {
               <button onClick={fetchData} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: "transparent", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer" }}>
                 ↻ Refresh
               </button>
-              {[{label: "30j", days: 30}, {label: "60j", days: 60}, {label: "90j", days: 90}, {label: "6 mois", days: 180}, {label: "12 mois", days: 365}].map((p) => (
-				  <button key={p.days} onClick={() => setPeriod(p.days)} style={{
-					padding: "6px 14px", borderRadius: 8, border: "1px solid",
-					borderColor: period === p.days ? "#6366f1" : "rgba(255,255,255,0.08)",
-					background: period === p.days ? "rgba(99,102,241,0.15)" : "transparent",
-					color: period === p.days ? "#a5b4fc" : "rgba(255,255,255,0.4)",
-					fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
-				  }}>{p.label}</button>
-				))}
+              {[7, 14, 30, 90].map((d) => (
+                <button key={d} onClick={() => setPeriod(d)} style={{
+                  padding: "6px 14px", borderRadius: 8, border: "1px solid",
+                  borderColor: period === d ? "#6366f1" : "rgba(255,255,255,0.08)",
+                  background: period === d ? "rgba(99,102,241,0.15)" : "transparent",
+                  color: period === d ? "#a5b4fc" : "rgba(255,255,255,0.4)",
+                  fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
+                }}>{d}j</button>
+              ))}
               <button onClick={handleLogout} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.2)", background: "transparent", color: "#fca5a5", fontSize: 11, cursor: "pointer", marginLeft: 4 }}>
                 Déconnexion
               </button>
