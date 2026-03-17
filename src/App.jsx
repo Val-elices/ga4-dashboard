@@ -134,6 +134,9 @@ function Chart({ data, clients, hoveredClient, showIndividual }) {
 // MAIN DASHBOARD
 // ════════════════════════════════════════════════════════
 export default function GA4Dashboard() {
+	const [customRange, setCustomRange] = useState(null);
+	const [startDate, setStartDate] = useState("");
+	const [endDate, setEndDate] = useState("");
   const [period, setPeriod] = useState(30);
   const [data, setData] = useState([]);
   const [clients, setClients] = useState([]);
@@ -175,7 +178,10 @@ export default function GA4Dashboard() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/api/revenue?days=${period}`, { credentials: "include" });
+     const url = customRange
+	  ? `${API_URL}/api/revenue?startDate=${customRange.start}&endDate=${customRange.end}`
+	  : `${API_URL}/api/revenue?days=${period}`;
+		const res = await fetch(url, { credentials: "include" });
       if (res.status === 401) {
         setAuth({ authenticated: false, email: null, checking: false });
         setError("Session expirée. Reconnectez-vous.");
@@ -199,7 +205,7 @@ export default function GA4Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [period, auth.authenticated]);
+  }, [period, auth.authenticated, customRange]);
 
   useEffect(() => {
     fetchData();
@@ -245,27 +251,42 @@ export default function GA4Dashboard() {
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          {auth.authenticated && (
-            <>
-              <button onClick={fetchData} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: "transparent", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer" }}>
-                ↻ Refresh
-              </button>
-              {[{label: "30j", days: 30}, {label: "60j", days: 60}, {label: "90j", days: 90}, {label: "6 mois", days: 180}, {label: "12 mois", days: 365}].map((p) => (
-				  <button key={p.days} onClick={() => setPeriod(p.days)} style={{
-					padding: "6px 14px", borderRadius: 8, border: "1px solid",
-					borderColor: period === p.days ? "#6366f1" : "rgba(255,255,255,0.08)",
-					background: period === p.days ? "rgba(99,102,241,0.15)" : "transparent",
-					color: period === p.days ? "#a5b4fc" : "rgba(255,255,255,0.4)",
-					fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
-				  }}>{p.label}</button>
-				))}
-              <button onClick={handleLogout} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.2)", background: "transparent", color: "#fca5a5", fontSize: 11, cursor: "pointer", marginLeft: 4 }}>
-                Déconnexion
-              </button>
-            </>
-          )}
-        </div>
+        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+		  {auth.authenticated && (
+			<>
+			  <button onClick={fetchData} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: "transparent", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer" }}>
+				↻ Refresh
+			  </button>
+			  {[{label: "30j", days: 30}, {label: "60j", days: 60}, {label: "90j", days: 90}, {label: "6 mois", days: 180}, {label: "12 mois", days: 365}].map((p) => (
+				<button key={p.days} onClick={() => { setPeriod(p.days); setCustomRange(null); }} style={{
+				  padding: "6px 14px", borderRadius: 8, border: "1px solid",
+				  borderColor: period === p.days && !customRange ? "#6366f1" : "rgba(255,255,255,0.08)",
+				  background: period === p.days && !customRange ? "rgba(99,102,241,0.15)" : "transparent",
+				  color: period === p.days && !customRange ? "#a5b4fc" : "rgba(255,255,255,0.4)",
+				  fontSize: 12, fontWeight: 600, cursor: "pointer", transition: "all 0.2s",
+				}}>{p.label}</button>
+			  ))}
+			  <div style={{ display: "flex", alignItems: "center", gap: 4, marginLeft: 4 }}>
+				<input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+				  style={{ padding: "5px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)", color: "#e2e2f0", fontSize: 11, fontFamily: "'JetBrains Mono', monospace" }} />
+				<span style={{ color: "rgba(255,255,255,0.3)", fontSize: 11 }}>→</span>
+				<input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+				  style={{ padding: "5px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)", color: "#e2e2f0", fontSize: 11, fontFamily: "'JetBrains Mono', monospace" }} />
+				<button onClick={() => { if (startDate && endDate) setCustomRange({ start: startDate, end: endDate }); }}
+				  style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid",
+					borderColor: customRange ? "#6366f1" : "rgba(255,255,255,0.08)",
+					background: customRange ? "rgba(99,102,241,0.15)" : "transparent",
+					color: customRange ? "#a5b4fc" : "rgba(255,255,255,0.4)",
+					fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+				  OK
+				</button>
+			  </div>
+			  <button onClick={handleLogout} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.2)", background: "transparent", color: "#fca5a5", fontSize: 11, cursor: "pointer", marginLeft: 4 }}>
+				Déconnexion
+			  </button>
+			</>
+		  )}
+		</div>
       </div>
 
       <div style={{ padding: "24px 28px", maxWidth: 1200, margin: "0 auto" }}>
