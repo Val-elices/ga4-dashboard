@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const PALETTE = ["#6366f1", "#f59e0b", "#10b981", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#f97316", "#14b8a6", "#a855f7", "#e11d48", "#0ea5e9", "#84cc16", "#d946ef", "#facc15", "#22d3ee", "#fb923c", "#4ade80"];
@@ -60,14 +60,13 @@ function BarChart({ data, color = "#6366f1" }) {
   if (!data || data.length === 0) return <div style={{ padding: 20, color: "rgba(255,255,255,0.3)", fontSize: 12 }}>Aucune donnée mensuelle</div>;
   const maxVal = Math.max(...data.map((d) => d.sessions)) * 1.15 || 100;
   const barW = Math.min(40, Math.max(16, 500 / data.length));
-  const chartH = 180;
-  const totalW = data.length * (barW + 8) + 40;
+  const chartH = 180, totalW = data.length * (barW + 8) + 40;
   return (
     <div style={{ overflowX: "auto", padding: "10px 0" }}>
       <svg width={Math.max(totalW, 300)} height={chartH + 40} style={{ display: "block" }}>
         {data.map((d, i) => {
           const barH = (d.sessions / maxVal) * chartH;
-          const x = 30 + i * (barW + 8); const y = chartH - barH + 10;
+          const x = 30 + i * (barW + 8), y = chartH - barH + 10;
           const label = d.yearMonth.slice(4) + "/" + d.yearMonth.slice(2, 4);
           return (<g key={i}><rect x={x} y={y} width={barW} height={barH} rx={4} fill={color} opacity={0.8} /><text x={x + barW / 2} y={y - 4} textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="9" fontFamily="'JetBrains Mono',monospace">{formatNum(d.sessions)}</text><text x={x + barW / 2} y={chartH + 24} textAnchor="middle" fill="rgba(255,255,255,0.3)" fontSize="9">{label}</text></g>);
         })}
@@ -86,17 +85,12 @@ function EvoBadge({ value, label }) {
   );
 }
 
-// ════════════════════════════════════════════════════════
-// GROWTH CARD
-// ════════════════════════════════════════════════════════
 function GrowthCard({ label, growth, currentOrganic, prevOrganic }) {
   const isPos = growth >= 0;
   return (
     <div style={{ background: "rgba(0,0,0,0.2)", borderRadius: 12, padding: "20px", textAlign: "center", border: `1px solid ${isPos ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)"}` }}>
       <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: 32, fontWeight: 700, color: isPos ? "#6ee7b7" : "#fca5a5", fontFamily: "'JetBrains Mono',monospace", marginBottom: 8 }}>
-        {formatPct(growth)}
-      </div>
+      <div style={{ fontSize: 32, fontWeight: 700, color: isPos ? "#6ee7b7" : "#fca5a5", fontFamily: "'JetBrains Mono',monospace", marginBottom: 8 }}>{formatPct(growth)}</div>
       <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", lineHeight: 1.6 }}>
         {formatNum(currentOrganic)} sessions<br />
         <span style={{ color: "rgba(255,255,255,0.2)" }}>vs {formatNum(prevOrganic)} (période préc.)</span>
@@ -129,9 +123,7 @@ export default function GA4Dashboard() {
   const [growthLoading, setGrowthLoading] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_URL}/auth/status`, { credentials: "include" })
-      .then((r) => r.json()).then((d) => setAuth({ ...d, checking: false }))
-      .catch(() => setAuth({ authenticated: false, email: null, checking: false }));
+    fetch(`${API_URL}/auth/status`, { credentials: "include" }).then((r) => r.json()).then((d) => setAuth({ ...d, checking: false })).catch(() => setAuth({ authenticated: false, email: null, checking: false }));
   }, []);
 
   useEffect(() => {
@@ -184,7 +176,7 @@ export default function GA4Dashboard() {
   }, [auth.authenticated]);
 
   useEffect(() => { if (activeTab === "revenue") fetchData(); }, [fetchData, activeTab]);
-  useEffect(() => { if (activeTab === "traffic") { fetchTraffic(); fetchGrowth(); } }, [fetchTraffic, fetchGrowth, activeTab]);
+  useEffect(() => { if (activeTab === "traffic") fetchTraffic(); }, [fetchTraffic, activeTab]);
 
   const handleLogin = () => { window.location.href = `${API_URL}/auth/login`; };
   const handleLogout = async () => { await fetch(`${API_URL}/auth/logout`, { credentials: "include" }); setAuth({ authenticated: false, email: null, checking: false }); setData([]); setClients([]); setTrafficData(null); setGrowthData(null); };
@@ -215,7 +207,7 @@ export default function GA4Dashboard() {
           </div>
           {auth.authenticated && (
             <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-              <button onClick={() => { if (activeTab === "revenue") fetchData(); else { fetchTraffic(); fetchGrowth(); } }} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: "transparent", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer" }}>↻</button>
+              <button onClick={() => { if (activeTab === "revenue") fetchData(); else fetchTraffic(); }} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: "transparent", color: "rgba(255,255,255,0.4)", fontSize: 12, cursor: "pointer" }}>↻</button>
               {[{ label: "30j", days: 30 }, { label: "60j", days: 60 }, { label: "90j", days: 90 }, { label: "6m", days: 180 }, { label: "12m", days: 365 }].map((p) => (
                 <button key={p.days} onClick={() => { setPeriod(p.days); setCustomRange(null); }} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid", borderColor: period === p.days && !customRange ? "#6366f1" : "rgba(255,255,255,0.08)", background: period === p.days && !customRange ? "rgba(99,102,241,0.15)" : "transparent", color: period === p.days && !customRange ? "#a5b4fc" : "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>{p.label}</button>
               ))}
@@ -315,7 +307,7 @@ export default function GA4Dashboard() {
         {auth.authenticated && !auth.checking && activeTab === "traffic" && (
           <>
             {trafficError && <div style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, padding: "12px 16px", marginBottom: 24, fontSize: 13, color: "#fca5a5" }}><b>Erreur :</b> {trafficError}</div>}
-            {trafficLoading ? <div style={{ textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.3)" }}><div style={{ fontSize: 24, marginBottom: 12, animation: "spin 1s linear infinite" }}>⟳</div>Chargement du trafic...</div> : trafficData && (
+            {trafficLoading ? <div style={{ textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.3)" }}><div style={{ fontSize: 24, marginBottom: 12, animation: "spin 1s linear infinite" }}>⟳</div>Chargement du trafic...<br /><span style={{ fontSize: 11, marginTop: 8, display: "inline-block" }}>Cela peut prendre 30-60s avec beaucoup de propriétés</span></div> : trafficData && (
               <>
                 {/* KPIs */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 24 }}>
@@ -374,20 +366,37 @@ export default function GA4Dashboard() {
                   </div>
                 </div>
 
-                {/* Cumulative Growth */}
+                {/* Cumulative Growth - loaded on demand */}
                 <div style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.06), rgba(99,102,241,0.02))", border: "1px solid rgba(99,102,241,0.12)", borderRadius: 14, padding: "24px" }}>
-                  <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 16px", color: "#a5b4fc" }}>Croissance cumulée globale — Organic Search (sessions)</h3>
+                  <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 8px", color: "#a5b4fc" }}>Croissance cumulée globale — Organic Search (sessions)</h3>
                   <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", margin: "0 0 20px" }}>Sessions organiques de tous les clients combinés, comparées à la période équivalente précédente.</p>
-                  {growthLoading ? (
-                    <div style={{ textAlign: "center", padding: "30px 0", color: "rgba(255,255,255,0.3)" }}>Calcul en cours...</div>
-                  ) : growthData ? (
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 14 }}>
-                      {growthData.growth.map((g) => (
-                        <GrowthCard key={g.label} label={g.label} growth={g.growth} currentOrganic={g.currentOrganic} prevOrganic={g.prevOrganic} />
-                      ))}
+
+                  {!growthData && !growthLoading && (
+                    <div style={{ textAlign: "center", padding: "20px 0" }}>
+                      <button onClick={fetchGrowth} style={{ padding: "10px 24px", borderRadius: 8, border: "1px solid #6366f1", background: "rgba(99,102,241,0.15)", color: "#a5b4fc", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                        Charger la croissance cumulée
+                      </button>
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", marginTop: 8 }}>Ce calcul peut prendre 30-60 secondes avec {trafficData?.summary?.clientCount || 0} propriétés</div>
                     </div>
-                  ) : null}
-                  {growthData && <div style={{ marginTop: 12, fontSize: 10, color: "rgba(255,255,255,0.2)", textAlign: "center" }}>Basé sur {growthData.clientCount} propriétés GA4</div>}
+                  )}
+
+                  {growthLoading && (
+                    <div style={{ textAlign: "center", padding: "30px 0", color: "rgba(255,255,255,0.3)" }}>
+                      <div style={{ fontSize: 20, marginBottom: 8, animation: "spin 1s linear infinite", display: "inline-block" }}>⟳</div>
+                      <br />Calcul en cours... cela peut prendre un moment
+                    </div>
+                  )}
+
+                  {growthData && (
+                    <>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 14 }}>
+                        {growthData.growth.map((g) => (
+                          <GrowthCard key={g.label} label={g.label} growth={g.growth} currentOrganic={g.currentOrganic} prevOrganic={g.prevOrganic} />
+                        ))}
+                      </div>
+                      <div style={{ marginTop: 12, fontSize: 10, color: "rgba(255,255,255,0.2)", textAlign: "center" }}>Basé sur {growthData.clientCount} propriétés GA4</div>
+                    </>
+                  )}
                 </div>
               </>
             )}
