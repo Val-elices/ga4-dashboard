@@ -395,82 +395,116 @@ export default function GA4Dashboard() {
 
                   {growthData && !growthLoading && (
                     <>
-                      {/* Big number */}
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 20 }}>
-                        <div style={{ background: "rgba(0,0,0,0.2)", borderRadius: 12, padding: "20px", textAlign: "center", border: `1px solid ${growthData.totalGrowth >= 0 ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)"}` }}>
-                          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>Croissance totale</div>
-                          <div style={{ fontSize: 36, fontWeight: 700, color: growthData.totalGrowth >= 0 ? "#6ee7b7" : "#fca5a5", fontFamily: "'JetBrains Mono',monospace" }}>
-                            {formatPct(growthData.totalGrowth)}
-                          </div>
-                          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 6 }}>
-                            depuis {growthData.referenceMonth.slice(4)}/{growthData.referenceMonth.slice(0, 4)}
-                          </div>
-                        </div>
-                        <div style={{ background: "rgba(0,0,0,0.2)", borderRadius: 12, padding: "20px", textAlign: "center" }}>
-                          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>Mois de référence</div>
-                          <div style={{ fontSize: 24, fontWeight: 700, color: "#a5b4fc", fontFamily: "'JetBrains Mono',monospace" }}>
-                            {formatNum(growthData.referenceSessions)}
-                          </div>
-                          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 6 }}>sessions organic</div>
-                        </div>
-                        <div style={{ background: "rgba(0,0,0,0.2)", borderRadius: 12, padding: "20px", textAlign: "center" }}>
-                          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>Mois actuel</div>
-                          <div style={{ fontSize: 24, fontWeight: 700, color: "#a5b4fc", fontFamily: "'JetBrains Mono',monospace" }}>
-                            {formatNum(growthData.currentSessions)}
-                          </div>
-                          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 6 }}>sessions organic</div>
-                        </div>
-                      </div>
+                      {/* 5 Milestone Cards: Ref, M6, M12, M18, M24 */}
+                      {(() => {
+                        const months = growthData.months;
+                        if (!months || months.length === 0) return null;
+                        const milestoneIndexes = [0, 5, 11, 17, 23]; // M1(ref), M6, M12, M18, M24
+                        const milestoneLabels = ["Réf.", "Mois 6", "Mois 12", "Mois 18", "Mois 24"];
+                        const milestones = milestoneIndexes.map((idx, i) => {
+                          if (idx < months.length) {
+                            return { label: milestoneLabels[i], ...months[idx] };
+                          }
+                          return null;
+                        }).filter(Boolean);
 
-                      {/* Monthly bar chart */}
+                        return (
+                          <div style={{ display: "grid", gridTemplateColumns: `repeat(${milestones.length}, 1fr)`, gap: 12, marginBottom: 20 }}>
+                            {milestones.map((m, i) => {
+                              const isRef = i === 0;
+                              const isPos = m.growthVsRef >= 0;
+                              return (
+                                <div key={i} style={{
+                                  background: isRef ? "rgba(245,158,11,0.08)" : "rgba(0,0,0,0.2)",
+                                  borderRadius: 12, padding: "18px 12px", textAlign: "center",
+                                  border: `1px solid ${isRef ? "rgba(245,158,11,0.2)" : isPos ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)"}`,
+                                }}>
+                                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>{m.label}</div>
+                                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", marginBottom: 6 }}>
+                                    {m.yearMonth.slice(4)}/{m.yearMonth.slice(0, 4)}
+                                  </div>
+                                  <div style={{
+                                    fontSize: 26, fontWeight: 700, fontFamily: "'JetBrains Mono',monospace",
+                                    color: isRef ? "#fbbf24" : isPos ? "#6ee7b7" : "#fca5a5",
+                                  }}>
+                                    {isRef ? "0%" : formatPct(m.growthVsRef)}
+                                  </div>
+                                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", marginTop: 6 }}>
+                                    {formatNum(m.sessions)} sessions
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Monthly bar chart - all months */}
                       <div style={{ background: "rgba(0,0,0,0.15)", borderRadius: 10, padding: "16px", marginBottom: 12 }}>
                         <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginBottom: 8 }}>Évolution mois par mois — tous clients cumulés</div>
                         {(() => {
                           const months = growthData.months;
                           if (!months || months.length === 0) return <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 12 }}>Aucune donnée</div>;
-                          const maxSessions = Math.max(...months.map((m) => m.sessions)) * 1.1 || 100;
-                          const barW = Math.min(44, Math.max(18, 600 / months.length));
-                          const chartH = 200;
-                          const totalW = months.length * (barW + 6) + 50;
+                          const maxSessions = Math.max(...months.map((m) => m.sessions)) * 1.15 || 100;
+                          const barW = Math.min(44, Math.max(20, 700 / months.length));
+                          const chartH = 220;
+                          const totalW = months.length * (barW + 8) + 50;
+                          const milestoneSet = new Set([0, 5, 11, 17, 23]);
                           return (
                             <div style={{ overflowX: "auto" }}>
-                              <svg width={Math.max(totalW, 300)} height={chartH + 50} style={{ display: "block" }}>
+                              <svg width={Math.max(totalW, 300)} height={chartH + 55} style={{ display: "block" }}>
                                 {/* Reference line */}
                                 {(() => {
                                   const refY = chartH - (growthData.referenceSessions / maxSessions) * chartH + 10;
-                                  return <line x1={20} y1={refY} x2={totalW - 10} y2={refY} stroke="#f59e0b" strokeWidth="1" strokeDasharray="6,4" opacity="0.5" />;
+                                  return <line x1={20} y1={refY} x2={totalW - 10} y2={refY} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="6,4" opacity="0.5" />;
                                 })()}
                                 {months.map((m, i) => {
-                                  const barH = (m.sessions / maxSessions) * chartH;
-                                  const x = 30 + i * (barW + 6), y = chartH - barH + 10;
+                                  const barH = Math.max(2, (m.sessions / maxSessions) * chartH);
+                                  const x = 30 + i * (barW + 8), y = chartH - barH + 10;
                                   const label = m.yearMonth.slice(4) + "/" + m.yearMonth.slice(2, 4);
                                   const isPositive = m.growthVsRef >= 0;
+                                  const isMilestone = milestoneSet.has(i);
+                                  const isRef = i === 0;
                                   return (
                                     <g key={i}>
-                                      <rect x={x} y={y} width={barW} height={barH} rx={4} fill={isPositive ? "#6366f1" : "#ef4444"} opacity={0.8} />
-                                      <text x={x + barW / 2} y={y - 14} textAnchor="middle" fill={isPositive ? "rgba(110,231,183,0.7)" : "rgba(252,165,165,0.7)"} fontSize="8" fontFamily="'JetBrains Mono',monospace">{formatPct(m.growthVsRef)}</text>
-                                      <text x={x + barW / 2} y={y - 4} textAnchor="middle" fill="rgba(255,255,255,0.45)" fontSize="8" fontFamily="'JetBrains Mono',monospace">{formatNum(m.sessions)}</text>
-                                      <text x={x + barW / 2} y={chartH + 24} textAnchor="middle" fill="rgba(255,255,255,0.3)" fontSize="8">{label}</text>
+                                      <rect x={x} y={y} width={barW} height={barH} rx={4}
+                                        fill={isRef ? "#f59e0b" : isPositive ? "#6366f1" : "#ef4444"}
+                                        opacity={isMilestone ? 1 : 0.6}
+                                        stroke={isMilestone && !isRef ? "rgba(255,255,255,0.2)" : "none"}
+                                        strokeWidth={isMilestone ? 1 : 0} />
+                                      <text x={x + barW / 2} y={y - 14} textAnchor="middle"
+                                        fill={isRef ? "#fbbf24" : isPositive ? "rgba(110,231,183,0.8)" : "rgba(252,165,165,0.8)"}
+                                        fontSize="8" fontWeight={isMilestone ? "700" : "400"}
+                                        fontFamily="'JetBrains Mono',monospace">
+                                        {isRef ? "Réf." : formatPct(m.growthVsRef)}
+                                      </text>
+                                      <text x={x + barW / 2} y={y - 4} textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="7" fontFamily="'JetBrains Mono',monospace">{formatNum(m.sessions)}</text>
+                                      <text x={x + barW / 2} y={chartH + 24} textAnchor="middle"
+                                        fill={isMilestone ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.25)"}
+                                        fontSize="8" fontWeight={isMilestone ? "600" : "400"}>{label}</text>
                                     </g>
                                   );
                                 })}
                               </svg>
-                              <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4, justifyContent: "center" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6, justifyContent: "center" }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
-                                  <div style={{ width: 16, height: 2, background: "#f59e0b", opacity: 0.5 }} /> Référence
+                                  <div style={{ width: 10, height: 10, borderRadius: 2, background: "#f59e0b" }} /> Référence
                                 </div>
                                 <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
-                                  <div style={{ width: 10, height: 10, borderRadius: 2, background: "#6366f1", opacity: 0.8 }} /> Croissance
+                                  <div style={{ width: 10, height: 10, borderRadius: 2, background: "#6366f1" }} /> Croissance
                                 </div>
                                 <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
-                                  <div style={{ width: 10, height: 10, borderRadius: 2, background: "#ef4444", opacity: 0.8 }} /> Décroissance
+                                  <div style={{ width: 10, height: 10, borderRadius: 2, background: "#ef4444" }} /> Décroissance
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
+                                  <div style={{ width: 10, height: 3, background: "#f59e0b", opacity: 0.5 }} /> Ligne de réf.
                                 </div>
                               </div>
                             </div>
                           );
                         })()}
                       </div>
-                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", textAlign: "center" }}>Basé sur {growthData.clientCount} propriétés GA4</div>
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", textAlign: "center" }}>Basé sur {growthData.clientCount} propriétés GA4 — Les barres en surbrillance correspondent aux jalons M1, M6, M12, M18, M24</div>
                     </>
                   )}
                 </div>
