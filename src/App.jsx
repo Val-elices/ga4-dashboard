@@ -121,7 +121,6 @@ export default function GA4Dashboard() {
   const [expandedClient, setExpandedClient] = useState(null);
   const [growthData, setGrowthData] = useState(null);
   const [growthLoading, setGrowthLoading] = useState(false);
-  const [refDate, setRefDate] = useState("2024-01-01");
 
   useEffect(() => {
     fetch(`${API_URL}/auth/status`, { credentials: "include" }).then((r) => r.json()).then((d) => setAuth({ ...d, checking: false })).catch(() => setAuth({ authenticated: false, email: null, checking: false }));
@@ -164,18 +163,17 @@ export default function GA4Dashboard() {
     } catch (err) { setTrafficError(err.message); } finally { setTrafficLoading(false); }
   }, [period, auth.authenticated, customRange]);
 
-  const fetchGrowth = useCallback(async (dateOverride) => {
+  const fetchGrowth = useCallback(async () => {
     if (!auth.authenticated) return;
     setGrowthLoading(true);
     try {
-      const d = dateOverride || refDate;
-      const res = await fetch(`${API_URL}/api/growth?refDate=${d}`, { credentials: "include" });
+      const res = await fetch(`${API_URL}/api/growth`, { credentials: "include" });
       if (res.status === 401) { setAuth({ authenticated: false, email: null, checking: false }); return; }
       const json = await res.json();
       if (json.success) setGrowthData(json);
     } catch (err) { console.error("Growth error:", err); }
     finally { setGrowthLoading(false); }
-  }, [auth.authenticated, refDate]);
+  }, [auth.authenticated]);
 
   useEffect(() => { if (activeTab === "revenue") fetchData(); }, [fetchData, activeTab]);
   useEffect(() => { if (activeTab === "traffic") fetchTraffic(); }, [fetchTraffic, activeTab]);
@@ -368,21 +366,22 @@ export default function GA4Dashboard() {
                   </div>
                 </div>
 
-                {/* Cumulative Growth from fixed reference date */}
+                {/* Cumulative Growth - 5 cards */}
                 <div style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.06), rgba(99,102,241,0.02))", border: "1px solid rgba(99,102,241,0.12)", borderRadius: 14, padding: "24px" }}>
-                  <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 8px", color: "#a5b4fc" }}>Croissance cumulée globale — Organic Search</h3>
-                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", margin: "0 0 16px" }}>Évolution des sessions organiques de tous les clients depuis une date de référence fixe.</p>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>Date de référence :</span>
-                    <input type="date" value={refDate} onChange={(e) => setRefDate(e.target.value)}
-                      style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#e2e2f0", fontSize: 12, fontFamily: "'JetBrains Mono',monospace" }} />
-                    <button onClick={() => { setGrowthData(null); fetchGrowth(refDate); }}
-                      style={{ padding: "6px 16px", borderRadius: 8, border: "1px solid #6366f1", background: "rgba(99,102,241,0.15)", color: "#a5b4fc", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                      {growthData ? "Recalculer" : "Calculer la croissance"}
-                    </button>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+                    <div>
+                      <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 4px", color: "#a5b4fc" }}>Croissance cumulée globale — Organic Search</h3>
+                      <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", margin: 0 }}>Moyenne des croissances individuelles de chaque client vs aujourd'hui</p>
+                    </div>
                     {!growthData && !growthLoading && (
-                      <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>Peut prendre 30-60s</span>
+                      <button onClick={fetchGrowth} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid #6366f1", background: "rgba(99,102,241,0.15)", color: "#a5b4fc", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                        Calculer
+                      </button>
+                    )}
+                    {growthData && !growthLoading && (
+                      <button onClick={fetchGrowth} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: "transparent", color: "rgba(255,255,255,0.4)", fontSize: 11, cursor: "pointer" }}>
+                        ↻ Recalculer
+                      </button>
                     )}
                   </div>
 
@@ -395,120 +394,33 @@ export default function GA4Dashboard() {
 
                   {growthData && !growthLoading && (
                     <>
-                      {/* 5 Milestone Cards: today vs 1m ago, 6m ago, 12m ago, 18m ago, 24m ago */}
-                      {(() => {
-                        const months = growthData.months;
-                        if (!months || months.length === 0) return null;
-                        const len = months.length;
-                        // Indexes from the end: current month, 1m ago, 6m ago, 12m ago, 18m ago, 24m ago
-                        const milestoneOffsets = [0, 5, 11, 17, 23]; // months back from current
-                        const milestoneLabels = ["Actuel", "Il y a 1 mois", "Il y a 6 mois", "Il y a 12 mois", "Il y a 18 mois", "Il y a 24 mois"];
-                        // We show: 24m, 18m, 12m, 6m, 1m → current (left to right, oldest to newest)
-                        const milestonesRaw = milestoneOffsets.map((offset, i) => {
-                          const idx = len - 1 - offset;
-                          if (idx >= 0 && idx < len) {
-                            return { label: milestoneLabels[i], ...months[idx], idx };
-                          }
-                          return null;
-                        }).filter(Boolean).reverse(); // reverse to show oldest first
-
-                        return (
-                          <div style={{ display: "grid", gridTemplateColumns: `repeat(${milestonesRaw.length}, 1fr)`, gap: 12, marginBottom: 20 }}>
-                            {milestonesRaw.map((m, i) => {
-                              const isCurrent = m.label === "Actuel";
-                              const isPos = m.growthVsRef >= 0;
-                              return (
-                                <div key={i} style={{
-                                  background: isCurrent ? "rgba(99,102,241,0.1)" : "rgba(0,0,0,0.2)",
-                                  borderRadius: 12, padding: "18px 12px", textAlign: "center",
-                                  border: `1px solid ${isCurrent ? "rgba(99,102,241,0.25)" : m.growthVsRef >= 0 ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)"}`,
-                                }}>
-                                  <div style={{ fontSize: 10, color: isCurrent ? "#a5b4fc" : "rgba(255,255,255,0.35)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>{m.label}</div>
-                                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", marginBottom: 6 }}>
-                                    {m.yearMonth.slice(4)}/{m.yearMonth.slice(0, 4)}
-                                  </div>
-                                  <div style={{
-                                    fontSize: 26, fontWeight: 700, fontFamily: "'JetBrains Mono',monospace",
-                                    color: isCurrent ? "#a5b4fc" : m.growthVsRef >= 0 ? "#6ee7b7" : "#fca5a5",
-                                  }}>
-                                    {formatPct(m.growthVsRef)}
-                                  </div>
-                                  <div style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", marginTop: 6 }}>
-                                    {formatNum(m.sessions)} sessions{m.clientsCovered ? ` (${m.clientsCovered} clients)` : ""}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        );
-                      })()}
-
-                      {/* Monthly bar chart - all months */}
-                      <div style={{ background: "rgba(0,0,0,0.15)", borderRadius: 10, padding: "16px", marginBottom: 12 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.5)", marginBottom: 8 }}>Évolution mois par mois — tous clients cumulés</div>
-                        {(() => {
-                          const months = growthData.months;
-                          if (!months || months.length === 0) return <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 12 }}>Aucune donnée</div>;
-                          const maxSessions = Math.max(...months.map((m) => m.sessions)) * 1.15 || 100;
-                          const barW = Math.min(44, Math.max(20, 700 / months.length));
-                          const chartH = 220;
-                          const totalW = months.length * (barW + 8) + 50;
-                          const milestoneSet = new Set([0, 5, 11, 17, 23]);
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
+                        {growthData.growth.map((g, i) => {
+                          const isPos = g.avgGrowth >= 0;
                           return (
-                            <div style={{ overflowX: "auto" }}>
-                              <svg width={Math.max(totalW, 300)} height={chartH + 55} style={{ display: "block" }}>
-                                {/* Reference line */}
-                                {(() => {
-                                  const refY = chartH - (growthData.referenceSessions / maxSessions) * chartH + 10;
-                                  return <line x1={20} y1={refY} x2={totalW - 10} y2={refY} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="6,4" opacity="0.5" />;
-                                })()}
-                                {months.map((m, i) => {
-                                  const barH = Math.max(2, (m.sessions / maxSessions) * chartH);
-                                  const x = 30 + i * (barW + 8), y = chartH - barH + 10;
-                                  const label = m.yearMonth.slice(4) + "/" + m.yearMonth.slice(2, 4);
-                                  const isPositive = m.growthVsRef >= 0;
-                                  const isMilestone = milestoneSet.has(i);
-                                  const isRef = i === 0;
-                                  return (
-                                    <g key={i}>
-                                      <rect x={x} y={y} width={barW} height={barH} rx={4}
-                                        fill={isRef ? "#f59e0b" : isPositive ? "#6366f1" : "#ef4444"}
-                                        opacity={isMilestone ? 1 : 0.6}
-                                        stroke={isMilestone && !isRef ? "rgba(255,255,255,0.2)" : "none"}
-                                        strokeWidth={isMilestone ? 1 : 0} />
-                                      <text x={x + barW / 2} y={y - 14} textAnchor="middle"
-                                        fill={isRef ? "#fbbf24" : isPositive ? "rgba(110,231,183,0.8)" : "rgba(252,165,165,0.8)"}
-                                        fontSize="8" fontWeight={isMilestone ? "700" : "400"}
-                                        fontFamily="'JetBrains Mono',monospace">
-                                        {isRef ? "Réf." : formatPct(m.growthVsRef)}
-                                      </text>
-                                      <text x={x + barW / 2} y={y - 4} textAnchor="middle" fill="rgba(255,255,255,0.4)" fontSize="7" fontFamily="'JetBrains Mono',monospace">{formatNum(m.sessions)}</text>
-                                      <text x={x + barW / 2} y={chartH + 24} textAnchor="middle"
-                                        fill={isMilestone ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.25)"}
-                                        fontSize="8" fontWeight={isMilestone ? "600" : "400"}>{label}</text>
-                                    </g>
-                                  );
-                                })}
-                              </svg>
-                              <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6, justifyContent: "center" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
-                                  <div style={{ width: 10, height: 10, borderRadius: 2, background: "#f59e0b" }} /> Référence
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
-                                  <div style={{ width: 10, height: 10, borderRadius: 2, background: "#6366f1" }} /> Croissance
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
-                                  <div style={{ width: 10, height: 10, borderRadius: 2, background: "#ef4444" }} /> Décroissance
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
-                                  <div style={{ width: 10, height: 3, background: "#f59e0b", opacity: 0.5 }} /> Ligne de réf.
-                                </div>
+                            <div key={i} style={{
+                              background: "rgba(0,0,0,0.2)", borderRadius: 12, padding: "20px 12px", textAlign: "center",
+                              border: `1px solid ${isPos ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)"}`,
+                            }}>
+                              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>
+                                {g.label}
+                              </div>
+                              <div style={{
+                                fontSize: 28, fontWeight: 700, fontFamily: "'JetBrains Mono',monospace",
+                                color: isPos ? "#6ee7b7" : "#fca5a5",
+                              }}>
+                                {formatPct(g.avgGrowth)}
+                              </div>
+                              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", marginTop: 8 }}>
+                                {g.clientsCovered} client{g.clientsCovered > 1 ? "s" : ""} couvert{g.clientsCovered > 1 ? "s" : ""}
                               </div>
                             </div>
                           );
-                        })()}
+                        })}
                       </div>
-                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", textAlign: "center" }}>Basé sur {growthData.clientCount} propriétés GA4 — Les barres en surbrillance correspondent aux jalons M1, M6, M12, M18, M24</div>
+                      <div style={{ marginTop: 12, fontSize: 10, color: "rgba(255,255,255,0.2)", textAlign: "center" }}>
+                        Basé sur {growthData.clientCount} propriétés GA4 — Évolution moyenne par client entre le mois indiqué et le mois en cours
+                      </div>
                     </>
                   )}
                 </div>
