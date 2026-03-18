@@ -430,7 +430,7 @@ export default function GA4Dashboard() {
                                     {isRef ? "0%" : formatPct(m.growthVsRef)}
                                   </div>
                                   <div style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", marginTop: 6 }}>
-                                    {formatNum(m.sessions)} sessions
+                                    {formatNum(m.sessions)} sessions{m.clientsCovered ? ` (${m.clientsCovered} clients)` : ""}
                                   </div>
                                 </div>
                               );
