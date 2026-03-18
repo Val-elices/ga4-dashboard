@@ -370,7 +370,7 @@ export default function GA4Dashboard() {
                 <div style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.06), rgba(99,102,241,0.02))", border: "1px solid rgba(99,102,241,0.12)", borderRadius: 14, padding: "24px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
                     <div>
-                      <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 4px", color: "#a5b4fc" }}>Croissance cumulée globale — Organic Search</h3>
+                      <h3 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 4px", color: "#a5b4fc" }}>Croissance cumulée globale : Organic Search</h3>
                       <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", margin: 0 }}>Moyenne des croissances individuelles de chaque client vs aujourd'hui</p>
                     </div>
                     {!growthData && !growthLoading && (
