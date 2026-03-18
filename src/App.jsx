@@ -395,39 +395,43 @@ export default function GA4Dashboard() {
 
                   {growthData && !growthLoading && (
                     <>
-                      {/* 5 Milestone Cards: Ref, M6, M12, M18, M24 */}
+                      {/* 5 Milestone Cards: today vs 1m ago, 6m ago, 12m ago, 18m ago, 24m ago */}
                       {(() => {
                         const months = growthData.months;
                         if (!months || months.length === 0) return null;
-                        const milestoneIndexes = [0, 5, 11, 17, 23]; // M1(ref), M6, M12, M18, M24
-                        const milestoneLabels = ["Réf.", "Mois 6", "Mois 12", "Mois 18", "Mois 24"];
-                        const milestones = milestoneIndexes.map((idx, i) => {
-                          if (idx < months.length) {
-                            return { label: milestoneLabels[i], ...months[idx] };
+                        const len = months.length;
+                        // Indexes from the end: current month, 1m ago, 6m ago, 12m ago, 18m ago, 24m ago
+                        const milestoneOffsets = [0, 5, 11, 17, 23]; // months back from current
+                        const milestoneLabels = ["Actuel", "Il y a 1 mois", "Il y a 6 mois", "Il y a 12 mois", "Il y a 18 mois", "Il y a 24 mois"];
+                        // We show: 24m, 18m, 12m, 6m, 1m → current (left to right, oldest to newest)
+                        const milestonesRaw = milestoneOffsets.map((offset, i) => {
+                          const idx = len - 1 - offset;
+                          if (idx >= 0 && idx < len) {
+                            return { label: milestoneLabels[i], ...months[idx], idx };
                           }
                           return null;
-                        }).filter(Boolean);
+                        }).filter(Boolean).reverse(); // reverse to show oldest first
 
                         return (
-                          <div style={{ display: "grid", gridTemplateColumns: `repeat(${milestones.length}, 1fr)`, gap: 12, marginBottom: 20 }}>
-                            {milestones.map((m, i) => {
-                              const isRef = i === 0;
+                          <div style={{ display: "grid", gridTemplateColumns: `repeat(${milestonesRaw.length}, 1fr)`, gap: 12, marginBottom: 20 }}>
+                            {milestonesRaw.map((m, i) => {
+                              const isCurrent = m.label === "Actuel";
                               const isPos = m.growthVsRef >= 0;
                               return (
                                 <div key={i} style={{
-                                  background: isRef ? "rgba(245,158,11,0.08)" : "rgba(0,0,0,0.2)",
+                                  background: isCurrent ? "rgba(99,102,241,0.1)" : "rgba(0,0,0,0.2)",
                                   borderRadius: 12, padding: "18px 12px", textAlign: "center",
-                                  border: `1px solid ${isRef ? "rgba(245,158,11,0.2)" : isPos ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)"}`,
+                                  border: `1px solid ${isCurrent ? "rgba(99,102,241,0.25)" : m.growthVsRef >= 0 ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)"}`,
                                 }}>
-                                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>{m.label}</div>
+                                  <div style={{ fontSize: 10, color: isCurrent ? "#a5b4fc" : "rgba(255,255,255,0.35)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>{m.label}</div>
                                   <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", marginBottom: 6 }}>
                                     {m.yearMonth.slice(4)}/{m.yearMonth.slice(0, 4)}
                                   </div>
                                   <div style={{
                                     fontSize: 26, fontWeight: 700, fontFamily: "'JetBrains Mono',monospace",
-                                    color: isRef ? "#fbbf24" : isPos ? "#6ee7b7" : "#fca5a5",
+                                    color: isCurrent ? "#a5b4fc" : m.growthVsRef >= 0 ? "#6ee7b7" : "#fca5a5",
                                   }}>
-                                    {isRef ? "0%" : formatPct(m.growthVsRef)}
+                                    {formatPct(m.growthVsRef)}
                                   </div>
                                   <div style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", marginTop: 6 }}>
                                     {formatNum(m.sessions)} sessions{m.clientsCovered ? ` (${m.clientsCovered} clients)` : ""}
