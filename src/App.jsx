@@ -322,10 +322,10 @@ export default function GA4Dashboard() {
                     <div style={{ fontSize: 28, fontWeight: 700, color: "#a5b4fc" }}>{formatNum(trafficData.summary.totalOrganic)}</div>
                   </div>
                   <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "20px 22px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                    <EvoBadge value={trafficData.summary.avgOrganicVsM1} label="Moy. Organic vs M-1" />
+                    <EvoBadge value={trafficData.summary.avgOrganicVsM1} label="Organic cumulé vs M-1" />
                   </div>
                   <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14, padding: "20px 22px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                    <EvoBadge value={trafficData.summary.avgOrganicVsN1} label="Moy. Organic vs N-1" />
+                    <EvoBadge value={trafficData.summary.avgOrganicVsN1} label="Organic cumulé vs N-1" />
                   </div>
                 </div>
 
